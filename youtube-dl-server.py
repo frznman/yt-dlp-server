@@ -1,10 +1,13 @@
 import json
 import os
 import subprocess
+import urllib.request
+import urllib.error
 from queue import Queue
 from bottle import route, run, Bottle, request, static_file
 from threading import Thread
 import mutagen
+from mutagen.id3 import ID3, APIC
 from mutagen.easyid3 import EasyID3
 
 app = Bottle()
@@ -36,12 +39,13 @@ def search():
     artist = request.params.get( "artist" )
     title = request.params.get( "title" )
     album = request.params.get( "album" )
+    artwork = request.params.get( "artwork-url" )
 
-    search = artist + title + album
+    search = artist + " " + title + " " + album
 
     if search is not None and "" != search:
         print( "Searching for: ", search )
-        dl_q.put( DownloadItem(None, artist, title, album) )
+        dl_q.put( DownloadItem(None, artist, title, album, artwork) )
         return { "success" : True }
     else:
         return { "success" : False, "error" : "yt called without a search query" }
@@ -76,13 +80,33 @@ def download(item):
         song["title"] = item.title
         song.save()
         print("Saved ID3 Tag data")
+        if item.artwork is not None:
+            try:
+                audio = ID3(filepath)
+                with urllib.request.urlopen(item.artwork) as albumart:
+                    audio['APIC'] = APIC(
+                        encoding=3,
+                        mime='image/jpeg',
+                        type=3, desc=u'Cover',
+                        data=albumart.read()
+                    )
+                audio.save()
+            except urllib.error.HTTPError as err:
+                print(err.reason)
+            finally:
+                try:
+                    sf.close()
+                except NameError:
+                    pass
+        print("Saved Artwork Image")
 
 class DownloadItem(object):
-    def __init__(self, url=None, artist=None, title=None, album=None):
+    def __init__(self, url=None, artist=None, title=None, album=None, artwork=None):
         self.url = url
         self.artist = artist
         self.title = title
         self.album = album
+        self.artwork = artwork
 
 # Start queue and app
 
