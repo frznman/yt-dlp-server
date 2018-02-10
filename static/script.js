@@ -85,9 +85,9 @@ function SubmitURL(url) {
 };
 
 // Attach a submit handler to the form
-function SubmitSearch(searchTerms) {
+function SubmitSearch(artist, title, album) {
   // Send the data using post
-  var posting = $.get( '/yt/search', { search: searchTerms } );
+  var posting = $.get( '/yt/search', { artist: artist, title: title, album:album } );
  
   // Put the results in a div
   posting.done(function( data ) {
@@ -123,13 +123,5 @@ $('#url-box').keypress(function(e) {
 
 // wire it up
 $('#search-btn').click(function() {
-  SubmitSearch($('#search-box').val());
-});
-
-// fires off a toast when you hit enter
-$('#search-box').keypress(function(e) {
-  if (e.which == 13) {
-    SubmitSearch($('#search-box').val());
-    return false;
-  }
+  SubmitSearch( $('#artist-box').val(), $('#title-box').val(), $('#album-box').val());
 });

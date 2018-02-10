@@ -41,7 +41,8 @@ def search():
     album = request.params.get( "album" )
     artwork = request.params.get( "artwork-url" )
 
-    search = artist + " " + title + " " + album
+    terms = [ artist, title, album ]
+    search = ' '.join(filter(None, terms))
 
     if search is not None and "" != search:
         print( "Searching for: ", search )
