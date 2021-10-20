@@ -1,7 +1,7 @@
 #
 # youtube-dl Server Dockerfile
 #
-# https://github.com/kmb32123/youtube-dl-server-dockerfile
+# https://github.com/frznman/yt-dlp-server
 #
 
 # Pull base image.
