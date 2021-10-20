@@ -11,9 +11,9 @@ COPY . /usr/src/app/
 
 WORKDIR /usr/src/app/
 
-# Install ffmpeg and required pip packages
+# Install GCC, ffmpeg, and required pip packages
 RUN \
-  apk add --no-cache ffmpeg && \
+  apk add --no-cache gcc ffmpeg && \
   pip install -r ./requirements.txt && \
   rm -rf /var/lib/apt/lists/* && \
   chmod 777 ./updateAndRun.sh
