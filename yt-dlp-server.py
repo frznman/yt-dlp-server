@@ -44,8 +44,7 @@ def search():
     artwork = request.params.get( "artwork-url" )
     ext = request.params.get( "ext" )
 
-    terms = [ artist, title, album ]
-    search = ' '.join(filter(None, terms))
+    search = f'{artist} {title} Lyric Video'
 
     if search is not None and "" != search:
         print( "Searching for: ", search )
@@ -74,7 +73,7 @@ def download(item):
     },
     'outtmpl': '%(artist)s-%(album)s-%(track)s-[%(id)s]-(%(title)s).%(ext)s'
     }
-    if item.ext is "mp3": ydl_opts['postprocessors'] = postprocessors
+    if item.ext == 'mp3': ydl_opts['postprocessors'] = postprocessors
 
     if item.url is not None:
         print("Starting download of " + item.url)
@@ -89,7 +88,7 @@ def download(item):
         
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.add_post_processor(SetID3DataPP())
-            ydl.extract_info(f'ytsearch {item.artist} {item.title} Lyric Video', extra_info={'artwork': item.artwork})
+            ydl.extract_info(f'ytsearch:{item.artist} {item.title} Lyric Video', extra_info={'artwork': item.artwork})
             
         print(f'Finished downloading {item.artist}-{item.title}')
 
