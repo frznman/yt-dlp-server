@@ -10,6 +10,7 @@ import mutagen
 from mutagen.id3 import ID3, APIC
 from mutagen.easyid3 import EasyID3
 import yt_dlp
+from yt_dlp.postprocessor.common import PostProcessor
 
 app = Bottle()
 
@@ -60,58 +61,37 @@ def dl_worker():
         dl_q.task_done()
 
 def download(item):
+    postprocessors = [{
+    'key': 'FFmpegExtractAudio',
+    'preferredcodec': 'mp3',
+    'preferredquality': '0',
+    }]
+
+    ydl_opts = {
+    'format': 'bestaudio/best',
+    'paths': {
+        'home': '/downloads/'
+    },
+    'outtmpl': '%(artist)s-%(album)s-%(track)s-[%(id)s]-(%(title)s).%(ext)s'
+    }
+    if item.ext is "mp3": ydl_opts['postprocessors'] = postprocessors
+
     if item.url is not None:
         print("Starting download of " + item.url)
-        command = ['/usr/local/bin/yt-dlp', '-f "ba"', '-o', '/downloads/%(title)s-%(id)s-%(artist)s-%(album)s-%(track)s.%(ext)s', '-x', item.url]
-        if item.ext is "mp3": command.append('--audio-format=mp3')
-        subprocess.call(command, shell=False)
-        
-        ydl_opts = {
-            'format': 'bestaudio/best',
-        }
+
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(['https://www.youtube.com/watch?v=BaW_jenozKc'])
-            print(json.dumps(ydl.sanitize_info(info)))
-        
+            ydl.add_post_processor(SetID3DataPP())
+            ydl.extract_info(item.url})
+
         print("Finished downloading " + item.url)
     else:
-        print("Starting download of " + item.artist + " - " + item.title)
-        filepath = "/downloads/{0}-{1}-{2}".format(item.artist, item.title, item.album)
-        command = ['/usr/local/bin/yt-dlp', '-f "ba"', '-o', filepath+"-%(id)s-%(artist)s-%(album)s-%(track)s.%(ext)s", '-x', "ytsearch:{0} {1} {2} lyrics".format(item.artist, item.title, item.album)]
-        if item.ext is "mp3": command.append('--audio-format=mp3')
-        subprocess.call(command, shell=False)
-        print("Finished downloading")
-        filepath = filepath + ".mp3"
-        print("Setting ID3 Tags")
-        try:
-            song = EasyID3(filepath)
-        except mutagen.id3.ID3NoHeaderError:
-            song = mutagen.File(filepath, easy=True)
-            song.add_tags()
-        song["artist"] = item.artist
-        song["album"] = item.album
-        song["title"] = item.title
-        song.save()
-        print("Saved ID3 Tag data")
-        if item.artwork is not None:
-            try:
-                audio = ID3(filepath)
-                with urllib.request.urlopen(item.artwork) as albumart:
-                    audio['APIC'] = APIC(
-                        encoding=3,
-                        mime='image/jpeg',
-                        type=3, desc=u'Cover',
-                        data=albumart.read()
-                    )
-                audio.save()
-            except urllib.error.HTTPError as err:
-                print(err.reason)
-            finally:
-                try:
-                    sf.close()
-                except NameError:
-                    pass
-        print("Saved Artwork Image")
+        print(f'Starting download {item.artist}-{item.title}')
+        
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.add_post_processor(SetID3DataPP())
+            ydl.extract_info(f'ytsearch {item.artist} {item.title} Lyric Video', extra_info={'artwork': item.artwork})
+            
+        print(f'Finished downloading {item.artist}-{item.title}')
 
 class DownloadItem(object):
     def __init__(self, url=None, artist=None, title=None, album=None, artwork=None, ext=None):
@@ -122,6 +102,44 @@ class DownloadItem(object):
         self.artwork = artwork
         self.ext = ext
 
+class SetID3DataPP(PostProcessor):
+  def run(self, info):
+    if info['ext'] != 'mp3':
+      self.to_screen('Not MP3, skipping ID3 tag update')
+      return [], info
+    self.to_screen('Setting ID3 Tags')
+    filepath = info['filepath']
+    try:
+        song = EasyID3(filepath)
+    except mutagen.id3.ID3NoHeaderError:
+        song = mutagen.File(filepath, easy=True)
+        song.add_tags()
+    song['artist'] = info['artist']
+    song['album'] = info['album']
+    song['title'] = info['track']
+    song.save()
+    self.to_screen('Saved ID3 Tag data')
+    if info['artwork'] is not None:
+        try:
+            audio = ID3(filepath)
+            with urllib.request.urlopen(info['artwork']) as albumart:
+                audio['APIC'] = APIC(
+                    encoding=3,
+                    mime=albumart.info().get_content_type(),
+                    type=3, desc=u'Cover',
+                    data=albumart.read()
+                )
+            audio.save()
+        except urllib.error.HTTPError as err:
+            print(err.reason)
+        finally:
+            try:
+                sf.close()
+            except NameError:
+                pass
+    print("Saved Artwork Image")
+    return [], info
+
 # Start queue and app
 
 dl_q = Queue();
@@ -131,7 +149,7 @@ dl_thread.start()
 
 print("Started download thread")
 
-app.run(host='0.0.0.0', port=8080, debug=True)
+app.run(host='0.0.0.0', port=8080, debug=False)
 done = True
 dl_thread.join()
-diff --git a/youtube-dl-server.py b/youtube-dl-server.py
+diff --git a/yt-dlp-server.py b/yt-dlp-server.py

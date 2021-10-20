@@ -1,7 +1,7 @@
-youtube-dl-server
+yt-dlp-server
 =================
 
-Interface and code forked from [`manbearwiz/youtube-dl-server`](https://github.com/manbearwiz/youtube-dl-server) to provide a single location to save YouTube videos as MP3s using [`bottle`](https://github.com/bottlepy/bottle) + [`youtube-dl`](https://github.com/rg3/youtube-dl).
+Interface and code forked from [`manbearwiz/youtube-dl-server`](https://github.com/manbearwiz/youtube-dl-server) to provide a single location to save YouTube videos as MP3s using [`bottle`](https://github.com/bottlepy/bottle) + [`yt-dlp`](https://github.com/yt-dlp/yt-dlp).
 
 Also includes an option to use a YouTube API key to search for videos and automagically download the top result as an MP3
 
@@ -15,7 +15,7 @@ How to use this image
 This example uses host networking for simplicitly. Also note the `-v` argument. This directory will be used to output the resulting videos
 
 ```
-sudo docker run -d --net="host" --name youtube-dl -v /home/scott/youtube-dl:/youtube-dl shuaiscott/youtube-dl-server
+sudo docker run -d --net="host" --name yt-dlp-server -v /yt-dlp:/yt-dlp frznman/yt-dlp-server
 ```
 
 ### Start a download remotely
@@ -29,7 +29,7 @@ Just navigate to `http://{{address}}:8080/yt` and enter the requested `{{url}}`.
 #### Curl
 
 ```
-curl -X POST --data-urlencode "url={{url}}" http://{{address}}:8080/youtube-dl/q
+curl -X POST --data-urlencode "url={{url}}" http://{{address}}:8080/yt/q
 ```
 
 ### Search for a video
@@ -45,11 +45,11 @@ curl -X POST --data-urlencode "artist={{artist}}" --data-urlencode "title={{titl
 Implementation
 --------------
 
-The server uses [`bottle`](https://github.com/bottlepy/bottle) for the web framework and [`youtube-dl`](https://github.com/rg3/youtube-dl) to handle the downloading. For better or worse, the calls to youtube-dl are made through the shell rather then through the python API.
+The server uses [`bottle`](https://github.com/bottlepy/bottle) for the web framework and [`yt-dlp`](https://github.com/yt-dlp/yt-dlp) to handle the downloading.
 
-This docker image is based on [`python:3-onbuild`](https://registry.hub.docker.com/_/python/) and consequently [`debian:jessie`](https://registry.hub.docker.com/u/library/debian/).
+This docker image is based on [`python:3-onbuild`](https://registry.hub.docker.com/_/python/) and consequently [`debian:buster`](https://registry.hub.docker.com/u/library/debian/).
 
-There is now a start-up script that updates all pip libraries so you'll always have the latest version of youtube-dl. To update, just restart the docker container.
+There is now a start-up script that updates all pip libraries so you'll always have the latest version of yt-dlp. To update, just restart the docker container.
 
 Thanks to
 ----------
@@ -57,4 +57,4 @@ CodePen: [Material "toast" notification](http://codepen.io/Dannzzor/pen/YXxaLE/)
 
 
 
-[1]: https://raw.githubusercontent.com/shuaiscott/youtube-dl-server/master/youtube-dl-server.png
+[1]: https://raw.githubusercontent.com/frznman/yt-dlp-server/master/yt-dlp-server.png
