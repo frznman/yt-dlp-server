@@ -15,7 +15,7 @@ How to use this image
 This example uses host networking for simplicitly. Also note the `-v` argument. This directory will be used to output the resulting videos
 
 ```
-sudo docker run -d --net="host" --name yt-dlp-server -v /yt-dlp:/yt-dlp frznman/yt-dlp-server
+sudo docker run -d --net="host" --name yt-dlp-server -v /yt-dlp:/yt-dlp ghcr.io/frznman/yt-dlp-server:latest
 ```
 
 ### Start a download remotely

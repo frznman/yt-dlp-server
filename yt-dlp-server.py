@@ -81,7 +81,7 @@ def download(item):
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.add_post_processor(SetID3DataPP())
-            ydl.extract_info(item.url})
+            ydl.extract_info(item.url)
 
         print("Finished downloading " + item.url)
     else:
