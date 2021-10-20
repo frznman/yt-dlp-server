@@ -152,4 +152,3 @@ print("Started download thread")
 app.run(host='0.0.0.0', port=8080, debug=False)
 done = True
 dl_thread.join()
-diff --git a/yt-dlp-server.py b/yt-dlp-server.py
