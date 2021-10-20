@@ -9,6 +9,7 @@ from threading import Thread
 import mutagen
 from mutagen.id3 import ID3, APIC
 from mutagen.easyid3 import EasyID3
+import yt_dlp
 
 app = Bottle()
 
@@ -40,6 +41,7 @@ def search():
     title = request.params.get( "title" )
     album = request.params.get( "album" )
     artwork = request.params.get( "artwork-url" )
+    ext = request.params.get( "ext" )
 
     terms = [ artist, title, album ]
     search = ' '.join(filter(None, terms))
@@ -60,13 +62,23 @@ def dl_worker():
 def download(item):
     if item.url is not None:
         print("Starting download of " + item.url)
-        command = ['/usr/local/bin/youtube-dl', '--restrict-filenames', '-o', '/downloads/%(title)s.%(ext)s', '-x', '--audio-format=mp3', '--audio-quality=0', item.url]
+        command = ['/usr/local/bin/yt-dlp', '-f "ba"', '-o', '/downloads/%(title)s-%(id)s-%(artist)s-%(album)s-%(track)s.%(ext)s', '-x', item.url]
+        if item.ext is "mp3": command.append('--audio-format=mp3')
         subprocess.call(command, shell=False)
+        
+        ydl_opts = {
+            'format': 'bestaudio/best',
+        }
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(['https://www.youtube.com/watch?v=BaW_jenozKc'])
+            print(json.dumps(ydl.sanitize_info(info)))
+        
         print("Finished downloading " + item.url)
     else:
         print("Starting download of " + item.artist + " - " + item.title)
         filepath = "/downloads/{0}-{1}-{2}".format(item.artist, item.title, item.album)
-        command = ['/usr/local/bin/youtube-dl', '-o', filepath+".%(ext)s", '-x', '--audio-format=mp3', '--audio-quality=0', "ytsearch:{0} {1} {2} lyrics".format(item.artist, item.title, item.album)]
+        command = ['/usr/local/bin/yt-dlp', '-f "ba"', '-o', filepath+"-%(id)s-%(artist)s-%(album)s-%(track)s.%(ext)s", '-x', "ytsearch:{0} {1} {2} lyrics".format(item.artist, item.title, item.album)]
+        if item.ext is "mp3": command.append('--audio-format=mp3')
         subprocess.call(command, shell=False)
         print("Finished downloading")
         filepath = filepath + ".mp3"
@@ -102,12 +114,13 @@ def download(item):
         print("Saved Artwork Image")
 
 class DownloadItem(object):
-    def __init__(self, url=None, artist=None, title=None, album=None, artwork=None):
+    def __init__(self, url=None, artist=None, title=None, album=None, artwork=None, ext=None):
         self.url = url
         self.artist = artist
         self.title = title
         self.album = album
         self.artwork = artwork
+        self.ext = ext
 
 # Start queue and app
 
@@ -121,3 +134,4 @@ print("Started download thread")
 app.run(host='0.0.0.0', port=8080, debug=True)
 done = True
 dl_thread.join()
+diff --git a/youtube-dl-server.py b/youtube-dl-server.py
