@@ -13,7 +13,7 @@ WORKDIR /usr/src/app/
 
 # Install GCC, ffmpeg, and required pip packages
 RUN \
-  apk add --no-cache gcc ffmpeg && \
+  apk add --no-cache gcc musl-dev ffmpeg && \
   pip install -r ./requirements.txt && \
   rm -rf /var/lib/apt/lists/* && \
   chmod 777 ./updateAndRun.sh
