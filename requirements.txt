@@ -1,3 +1,4 @@
+setuptools
 bottle
 yt-dlp
 mutagen
