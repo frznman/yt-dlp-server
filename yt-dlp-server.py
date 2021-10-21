@@ -15,7 +15,7 @@ from yt_dlp.postprocessor.common import PostProcessor
 app = Bottle()
 
 @app.route('/yt')
-def dl_queue_list():
+def index_static():
     return static_file('index.html', root='./')
 
 @app.route('/yt/static/:filename#.*#')
@@ -24,7 +24,7 @@ def server_static(filename):
 
 @app.route('/yt/q', method='GET')
 def q_size():
-    return { "success" : True, "size" : json.dumps(list(dl_q.queue)) }
+    return { "success" : True, "size" : dl_q.qsize() }
 
 @app.route('/yt/q', method='POST')
 def q_put():
@@ -91,7 +91,7 @@ def download(item):
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.add_post_processor(AddID3ArtworkPP())
-            ydl.download(item.url)
+            ydl.download([item.url])
 
         print("Finished downloading " + item.url)
     else:
