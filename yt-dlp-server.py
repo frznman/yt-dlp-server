@@ -96,6 +96,9 @@ def download(item):
         print("Finished downloading " + item.url)
     else:
         print(f'Starting download {item.artist}-{item.title}')
+
+        if item.artist is not None and item.album is not None:
+            ydl_opts['paths']['home'] = f'/downloads/{item.artist}/{item.album}/'
         
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.add_post_processor(AddID3ArtworkPP())
