@@ -60,11 +60,21 @@ def dl_worker():
         dl_q.task_done()
 
 def download(item):
-    postprocessors = [{
+    mp3_postprocessor = {
     'key': 'FFmpegExtractAudio',
     'preferredcodec': 'mp3',
     'preferredquality': '0',
-    }]
+    }
+
+    opus_postprocessor = {
+    'key': 'FFmpegExtractAudio',
+    'preferredcodec': item.ext,
+    }
+
+    metadata_postprocessor = {
+    'key': 'FFmpegMetadata',
+    'add_metadata': True
+    }
 
     ydl_opts = {
     'format': 'bestaudio/best',
@@ -73,27 +83,28 @@ def download(item):
     },
     'outtmpl': '%(artist)s-%(album)s-%(track)s-[%(id)s]-(%(title)s).%(ext)s'
     }
-    if item.ext == 'mp3': ydl_opts['postprocessors'] = postprocessors
+    if item.ext == 'mp3': ydl_opts['postprocessors'] = [mp3_postprocessor, metadata_postprocessor]
+    if item.ext in ['opus', 'ogg', 'webm']: ydl_opts['postprocessors'] = [opus_postprocessor, metadata_postprocessor]
 
     if item.url is not None:
         print("Starting download of " + item.url)
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.add_post_processor(SetID3DataPP())
-            ydl.extract_info(item.url)
+            ydl.add_post_processor(AddID3ArtworkPP())
+            ydl.download(item.url)
 
         print("Finished downloading " + item.url)
     else:
         print(f'Starting download {item.artist}-{item.title}')
         
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.add_post_processor(SetID3DataPP())
+            ydl.add_post_processor(AddID3ArtworkPP())
             ydl.extract_info(f'ytsearch:{item.artist} {item.title} Lyric Video', extra_info={'artwork': item.artwork})
             
         print(f'Finished downloading {item.artist}-{item.title}')
 
 class DownloadItem(object):
-    def __init__(self, url=None, artist=None, title=None, album=None, artwork=None, ext=None):
+    def __init__(self, url=None, artist=None, title=None, album=None, artwork=None, ext='opus'):
         self.url = url
         self.artist = artist
         self.title = title
@@ -101,7 +112,7 @@ class DownloadItem(object):
         self.artwork = artwork
         self.ext = ext
 
-class SetID3DataPP(PostProcessor):
+class AddID3ArtworkPP(PostProcessor):
   def run(self, info):
     if info['ext'] != 'mp3':
       self.to_screen('Not MP3, skipping ID3 tag update')
@@ -113,11 +124,6 @@ class SetID3DataPP(PostProcessor):
     except mutagen.id3.ID3NoHeaderError:
         song = mutagen.File(filepath, easy=True)
         song.add_tags()
-    song['artist'] = info['artist']
-    song['album'] = info['album']
-    song['title'] = info['track']
-    song.save()
-    self.to_screen('Saved ID3 Tag data')
     if info['artwork'] is not None:
         try:
             audio = ID3(filepath)
